@@ -8,6 +8,15 @@
 // TODO: Remove this once I'm done with the project.
 #![allow(dead_code)]
 
+use anyhow::{Error, Result};
+
+/*
+ * byteorder is a lower-level library that provides utilities for handling byte order (endianness).
+ * It allows you to read or write numeric types to byte arrays directly in either big-endian
+ * or little-endian order.
+ */
+use byteorder::{BigEndian, WriteBytesExt};
+
 /// Header format: <https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.1>
 #[derive(Debug)]
 pub struct DNSHeader {
@@ -31,6 +40,27 @@ pub struct DNSHeader {
     ar_count: u16,
 }
 
+impl DNSHeader {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        /*
+         * Create an empty byte array.
+         * Vec::new() is a generic function that creates a new growable vector.
+         * The type of a generic function or method is usually inferred from the context where it's used.
+         */
+        let mut bytes = Vec::new();
+
+        // Write the fields as a 2-byte integer in network byte order (big endian).
+        bytes.write_u16::<BigEndian>(self.id)?;
+        bytes.write_u16::<BigEndian>(self.flags)?;
+        bytes.write_u16::<BigEndian>(self.qd_count)?;
+        bytes.write_u16::<BigEndian>(self.an_count)?;
+        bytes.write_u16::<BigEndian>(self.ns_count)?;
+        bytes.write_u16::<BigEndian>(self.ar_count)?;
+
+        Ok(bytes)
+    }
+}
+
 /// Question format: <https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.2>
 ///
 /// The question section is used to carry the "question" in most queries,
@@ -45,6 +75,26 @@ pub struct DNSQuestion {
 
     /// A code that specifies the class of the query.
     q_class: u16,
+}
+
+impl DNSQuestion {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        // Create an empty byte array.
+        let mut bytes = Vec::new();
+
+        /*
+         * Write the q_name.
+         * For simplicity, we just extend the bytes vector with q_name.
+         * Depending on the actual DNS protocol, there may be more complex transformations needed.
+         */
+        bytes.extend(&self.q_name);
+
+        // Write the other fields.
+        bytes.write_u16::<BigEndian>(self.q_type)?;
+        bytes.write_u16::<BigEndian>(self.q_class)?;
+
+        Ok(bytes)
+    }
 }
 
 /*
