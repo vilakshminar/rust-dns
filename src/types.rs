@@ -8,42 +8,42 @@
 // TODO: Remove this once I'm done with the project.
 #![allow(dead_code)]
 
-/// Header format: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.1
+/// Header format: <https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.1>
 #[derive(Debug)]
 pub struct DNSHeader {
-    // Assigned by the program that generates any kind of query.
+    /// Assigned by the program that generates any kind of query.
     id: u16,
 
-    // Mostly going to be ignored.
     // TODO: If I wanted to implement it, how would I go about it?
+    /// Mostly going to be ignored.
     flags: u16,
 
-    // Specifies the number of entries in the question section.
+    /// Specifies the number of entries in the question section.
     qd_count: u16,
 
-    // Specifies the number of resource records in the answer section.
+    /// Specifies the number of resource records in the answer section.
     an_count: u16,
 
-    // Specifies the number of name server resource records in the authority records section.
+    /// Specifies the number of name server resource records in the authority records section.
     ns_count: u16,
 
-    // Specifies the number of resource records in the additional records section.
+    /// Specifies the number of resource records in the additional records section.
     ar_count: u16,
 }
 
-/// Question format: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.2
+/// Question format: <https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.2>
 ///
 /// The question section is used to carry the "question" in most queries,
 /// i.e., the parameters that define what is being asked.
 #[derive(Debug)]
 pub struct DNSQuestion {
-    // A domain name represented as a sequence of labels (like example.com).
+    /// A domain name represented as a sequence of labels (like example.com).
     q_name: Vec<u8>,
 
-    // A code which specifies the type of the query (A, AAAA, etc.).
+    /// A code which specifies the type of the query (A, AAAA, etc.).
     q_type: u16,
 
-    // A code that specifies the class of the query.
+    /// A code that specifies the class of the query.
     q_class: u16,
 }
 
@@ -51,67 +51,67 @@ pub struct DNSQuestion {
  * Values are defined by the DNS protocol and must match the RFC standard exactly.
  * That's why they've been explicitly defined.
  */
-/// QTypes values: https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.3
+/// QTypes values: <https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.3>
 #[derive(Debug)]
 pub enum QTypes {
-    // A host address.
+    /// A host address.
     A = 1,
 
-    // An authoritative name server
+    /// An authoritative name server
     NS = 2,
 
-    // A mail destination. Obsolete, use MX instead.
+    /// A mail destination. Obsolete, use MX instead.
     // MD = 3,
 
-    // A mail forwarder. Obsolete, use MX instead.
+    /// A mail forwarder. Obsolete, use MX instead.
     // MF = 4,
 
-    // The canonical name for an alias.
+    /// The canonical name for an alias.
     CNAME = 5,
 
-    // Marks the start of a zone of authority.
+    /// Marks the start of a zone of authority.
     SOA = 6,
 
-    // A mailbox domain name (EXPERIMENTAL)
+    /// A mailbox domain name (EXPERIMENTAL)
     MB = 7,
 
-    // A mail group member (EXPERIMENTAL)
+    /// A mail group member (EXPERIMENTAL)
     MG = 8,
 
-    // A mail rename domain name (EXPERIMENTAL)
+    /// A mail rename domain name (EXPERIMENTAL)
     MR = 9,
 
-    // A null RR (EXPERIMENTAL)
+    /// A null RR (EXPERIMENTAL)
     NULL = 10,
 
-    // A well known service description.
+    /// A well known service description.
     WKS = 11,
 
-    // A domain name pointer.
+    /// A domain name pointer.
     PTR = 12,
 
-    // host information
+    /// Host information.
     HINFO = 13,
 
-    // Mailbox or mail list information.
+    /// Mailbox or mail list information.
     MINFO = 14,
 
-    // Mail exchange.
+    /// Mail exchange.
     MX = 15,
 
-    // Text strings.
+    /// Text strings.
     TXT = 16,
 
-    // A request for a transfer of an entire zone.
+    /// A request for a transfer of an entire zone.
     AXFR = 252,
 
-    // A request for mailbox-related records (MB, MG or MR).
+    /// A request for mailbox-related records (MB, MG or MR).
     MAILB = 253,
 
-    // A request for mail agent RRs. Obsolete, use MX instead.
+    /// A request for mail agent RRs. Obsolete, use MX instead.
     // MAILA = 254,
 
-    // A request for all records.
+    /// A request for all records.
     ANY = 255,
 }
 
@@ -127,22 +127,22 @@ impl Into<u16> for QTypes {
     }
 }
 
-/// QClass values: https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.5
+/// QClass values: <https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.5>
 #[derive(Debug)]
 pub enum QClass {
-    // the Internet
+    /// The Internet
     IN = 1,
 
-    // the CSNET class (Obsolete - used only for examples in some obsolete RFCs)
+    /// The CSNET class (Obsolete - used only for examples in some obsolete RFCs)
     CS = 2,
 
-    // the CHAOS class
+    /// The CHAOS class
     CH = 3,
 
-    // Hesiod [Dyer 87]
+    /// Hesiod [Dyer 87]
     HS = 4,
 
-    // Any class
+    /// Any class
     ANY = 255,
 }
 
