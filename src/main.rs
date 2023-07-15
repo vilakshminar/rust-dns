@@ -1,4 +1,6 @@
 // Declare modules for the main binary crate.
+mod decode;
+mod encode;
 mod types;
 
 use types::QTypes;
