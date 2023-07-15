@@ -5,7 +5,7 @@
  * and additional info.
  */
 
-// TODO: Remove this once I'm done with the project.
+// TODO: Remove this once I'm done.
 #![allow(dead_code)]
 
 use anyhow::{Error, Result};
@@ -49,7 +49,12 @@ impl DNSHeader {
          */
         let mut bytes = Vec::new();
 
-        // Write the fields as a 2-byte integer in network byte order (big endian).
+        /*
+         * Write the fields as a 2-byte integer in network byte order (big endian).
+         * The names "big endian" and "little endian" come from Gulliver's Travels.
+         * Theres no real advantage to the byte order itself. For computer networking,
+         * big endian is the default.
+         */
         bytes.write_u16::<BigEndian>(self.id)?;
         bytes.write_u16::<BigEndian>(self.flags)?;
         bytes.write_u16::<BigEndian>(self.qd_count)?;

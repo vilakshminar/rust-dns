@@ -1,6 +1,6 @@
 .PHONY: *
 
-all: build
+all: clean build test
 
 clean:
 	@echo "Running clean"
