@@ -17,89 +17,34 @@ use anyhow::{Error, Result};
  */
 use byteorder::{BigEndian, WriteBytesExt};
 
-/// Header format: <https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.1>
+/*
+ * RR (Resource Records) definitions.
+ * All RRs have the same top level format: Name, Type, Class, TTL, RDLength, RData.
+ * Type & Class fields are a subset of QType & QClass that are defined below.
+ */
+/// RR definition: <https://datatracker.ietf.org/doc/html/rfc1035#section-3.2>
 #[derive(Debug)]
-pub struct DNSHeader {
-    /// Assigned by the program that generates any kind of query.
-    id: u16,
+pub struct DNSRecord {
+    /// The domain name to which this record applies.
+    name: String,
 
-    // TODO: If I wanted to implement it, how would I go about it?
-    /// Mostly going to be ignored.
-    flags: u16,
+    /**
+     * The type of DNS record, such as A (IPv4 address), AAAA (IPv6 address), CNAME, etc.
+     * For simplicity sake, we'll reuse the QTypes enum.
+     */
+    r_type: QTypes,
 
-    /// Specifies the number of entries in the question section.
-    qd_count: u16,
+    /// The class of the DNS record, typically IN for Internet.
+    r_class: QClass,
 
-    /// Specifies the number of resource records in the answer section.
-    an_count: u16,
+    /// The time-to-live of the record, which indicates how long the record can be cached.
+    ttl: i32,
 
-    /// Specifies the number of name server resource records in the authority records section.
-    ns_count: u16,
+    /// The length in octets of the data field.
+    rd_length: u16,
 
-    /// Specifies the number of resource records in the additional records section.
-    ar_count: u16,
-}
-
-impl DNSHeader {
-    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
-        /*
-         * Create an empty byte array.
-         * Vec::new() is a generic function that creates a new growable vector.
-         * The type of a generic function or method is usually inferred from the context where it's used.
-         */
-        let mut bytes = Vec::new();
-
-        /*
-         * Write the fields as a 2-byte integer in network byte order (big endian).
-         * The names "big endian" and "little endian" come from Gulliver's Travels.
-         * Theres no real advantage to the byte order itself. For computer networking,
-         * big endian is the default.
-         */
-        bytes.write_u16::<BigEndian>(self.id)?;
-        bytes.write_u16::<BigEndian>(self.flags)?;
-        bytes.write_u16::<BigEndian>(self.qd_count)?;
-        bytes.write_u16::<BigEndian>(self.an_count)?;
-        bytes.write_u16::<BigEndian>(self.ns_count)?;
-        bytes.write_u16::<BigEndian>(self.ar_count)?;
-
-        Ok(bytes)
-    }
-}
-
-/// Question format: <https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.2>
-///
-/// The question section is used to carry the "question" in most queries,
-/// i.e., the parameters that define what is being asked.
-#[derive(Debug)]
-pub struct DNSQuestion {
-    /// A domain name represented as a sequence of labels (like example.com).
-    q_name: Vec<u8>,
-
-    /// A code which specifies the type of the query (A, AAAA, etc.).
-    q_type: u16,
-
-    /// A code that specifies the class of the query.
-    q_class: u16,
-}
-
-impl DNSQuestion {
-    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
-        // Create an empty byte array.
-        let mut bytes = Vec::new();
-
-        /*
-         * Write the q_name.
-         * For simplicity, we just extend the bytes vector with q_name.
-         * Depending on the actual DNS protocol, there may be more complex transformations needed.
-         */
-        bytes.extend(&self.q_name);
-
-        // Write the other fields.
-        bytes.write_u16::<BigEndian>(self.q_type)?;
-        bytes.write_u16::<BigEndian>(self.q_class)?;
-
-        Ok(bytes)
-    }
+    /// Additional record-specific data.
+    data: Vec<u8>,
 }
 
 /*
@@ -204,5 +149,90 @@ pub enum QClass {
 impl Into<u16> for QClass {
     fn into(self) -> u16 {
         self as u16
+    }
+}
+
+/// Header format: <https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.1>
+#[derive(Debug)]
+pub struct DNSHeader {
+    /// Assigned by the program that generates any kind of query.
+    id: u16,
+
+    // TODO: If I wanted to implement it, how would I go about it?
+    /// Mostly going to be ignored.
+    flags: u16,
+
+    /// Specifies the number of entries in the question section.
+    qd_count: u16,
+
+    /// Specifies the number of resource records in the answer section.
+    an_count: u16,
+
+    /// Specifies the number of name server resource records in the authority records section.
+    ns_count: u16,
+
+    /// Specifies the number of resource records in the additional records section.
+    ar_count: u16,
+}
+
+impl DNSHeader {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        /*
+         * Create an empty byte array.
+         * Vec::new() is a generic function that creates a new growable vector.
+         * The type of a generic function or method is usually inferred from the context where it's used.
+         */
+        let mut bytes = Vec::new();
+
+        /*
+         * Write the fields as a 2-byte integer in network byte order (big endian).
+         * The names "big endian" and "little endian" come from Gulliver's Travels.
+         * Theres no real advantage to the byte order itself. For computer networking,
+         * big endian is the default.
+         */
+        bytes.write_u16::<BigEndian>(self.id)?;
+        bytes.write_u16::<BigEndian>(self.flags)?;
+        bytes.write_u16::<BigEndian>(self.qd_count)?;
+        bytes.write_u16::<BigEndian>(self.an_count)?;
+        bytes.write_u16::<BigEndian>(self.ns_count)?;
+        bytes.write_u16::<BigEndian>(self.ar_count)?;
+
+        Ok(bytes)
+    }
+}
+
+/// Question format: <https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.2>
+///
+/// The question section is used to carry the "question" in most queries,
+/// i.e., the parameters that define what is being asked.
+#[derive(Debug)]
+pub struct DNSQuestion {
+    /// A domain name represented as a sequence of labels (like example.com).
+    q_name: Vec<u8>,
+
+    /// A code which specifies the type of the query (A, AAAA, etc.).
+    q_type: u16,
+
+    /// A code that specifies the class of the query.
+    q_class: u16,
+}
+
+impl DNSQuestion {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        // Create an empty byte array.
+        let mut bytes = Vec::new();
+
+        /*
+         * Write the q_name.
+         * For simplicity, we just extend the bytes vector with q_name.
+         * Depending on the actual DNS protocol, there may be more complex transformations needed.
+         */
+        bytes.extend(&self.q_name);
+
+        // Write the other fields.
+        bytes.write_u16::<BigEndian>(self.q_type)?;
+        bytes.write_u16::<BigEndian>(self.q_class)?;
+
+        Ok(bytes)
     }
 }
