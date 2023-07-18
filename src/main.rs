@@ -1,12 +1,16 @@
 // Declare modules for the main binary crate.
 mod decode;
+mod dns;
 mod encode;
 mod types;
 
-use types::QTypes;
+use types::QType;
 
 fn main() {
-    let qtype = QTypes::CNAME;
+    let qtype = QType::CNAME;
     let num: u16 = qtype.into();
     println!("{}", num);
+
+    println!("{:?}", dns::build_query("google.com", QType::CNAME));
+    println!("Hello, world!")
 }
