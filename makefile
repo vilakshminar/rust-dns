@@ -1,6 +1,6 @@
 .PHONY: *
 
-all: clean build test
+all: clean build doc test
 
 clean:
 	@echo "Running clean"
@@ -11,6 +11,10 @@ clean:
 build:
 	@echo "*** Building toy dns server"
 	cargo build
+
+doc:
+	@echo "*** Building documentation"
+	cargo doc --no-deps --open
 
 test:
 	@echo "*** Testing toy dns server"

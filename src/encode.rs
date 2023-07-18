@@ -1,3 +1,5 @@
+//! Implements encoding logic, for example, encoding a domain name into a byte array etc.
+
 // TODO: Remove this once I'm done.
 #![allow(dead_code)]
 
@@ -15,7 +17,7 @@ use std::io::Write;
  * format, where 6 is the length of the word "google", 3 is the
  * length of the word "com" and 0 represents the end of the domain name.
  */
-fn encode_dns_name(domain_name: &str) -> Result<Vec<u8>, Error> {
+pub fn dns_name(domain_name: &str) -> Result<Vec<u8>, Error> {
     let mut encoded = Vec::new();
     for part in domain_name.split('.') {
         println!("1");
@@ -65,7 +67,7 @@ mod test {
         ];
 
         for test_case in test_cases {
-            let actual = encode_dns_name(test_case.domain).unwrap();
+            let actual = dns_name(test_case.domain).unwrap();
             assert_eq!(
                 actual, test_case.expected,
                 "failed for domain: {}",

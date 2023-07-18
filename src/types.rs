@@ -1,9 +1,4 @@
-/*!
- * All communications inside of the domain protocol are carried in a single format called a DNS message.
- *
- * The top level format of a message is divided into 5 sections: header, question, answer, authority
- * and additional info.
- */
+//! Defines all the necessary data structures/types needed to implement a DNS resolver.
 
 // TODO: Remove this once I'm done.
 #![allow(dead_code)]
@@ -30,9 +25,9 @@ pub struct DNSRecord {
 
     /**
      * The type of DNS record, such as A (IPv4 address), AAAA (IPv6 address), CNAME, etc.
-     * For simplicity sake, we'll reuse the QTypes enum.
+     * For simplicity sake, we'll reuse the QType enum.
      */
-    r_type: QTypes,
+    r_type: QType,
 
     /// The class of the DNS record, typically IN for Internet.
     r_class: QClass,
@@ -51,9 +46,9 @@ pub struct DNSRecord {
  * Values are defined by the DNS protocol and must match the RFC standard exactly.
  * That's why they've been explicitly defined.
  */
-/// QTypes values: <https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.3>
+/// QType values: <https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.3>
 #[derive(Debug)]
-pub enum QTypes {
+pub enum QType {
     /// A host address.
     A = 1,
 
@@ -119,9 +114,9 @@ pub enum QTypes {
  * Into trait is known as a "conversion trait".
  * It's used for generic conversions across different types.
  * When implemented, it allows one type to be "converted into" another type.
- * The following code allows us to convert QTypes into u16.
+ * The following code allows us to convert QType into u16.
  */
-impl Into<u16> for QTypes {
+impl Into<u16> for QType {
     fn into(self) -> u16 {
         self as u16
     }
@@ -176,7 +171,7 @@ pub struct DNSHeader {
 }
 
 impl DNSHeader {
-    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
         /*
          * Create an empty byte array.
          * Vec::new() is a generic function that creates a new growable vector.
@@ -218,7 +213,7 @@ pub struct DNSQuestion {
 }
 
 impl DNSQuestion {
-    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
         // Create an empty byte array.
         let mut bytes = Vec::new();
 
