@@ -11,18 +11,17 @@ use crate::types::*;
 pub fn build_query(domain_name: &str, qn_type: QType) -> Result<Vec<u8>, Error> {
     let name = encode::dns_name(domain_name)?;
 
-    // TODO: Parse the result properly instead of
-    println!("{:?}", name);
-    println!("{:?}", qn_type);
-
     // declare object of type DNSQuestion and populate with data.
     let dns_qn = DNSQuestion {
-        q_name: name,
-        q_type: qn_type.into(),
-        q_class: QClass::IN.into(),
+        qname: name,
+        qtype: qn_type.into(),
+        qclass: QClass::IN.into(),
     };
 
-    Ok(name)
+    // Convert DNSQuestion to bytes.
+    let query_bytes = dns_qn.to_bytes()?;
+
+    Ok(query_bytes)
 }
 
 pub fn execute_query() {

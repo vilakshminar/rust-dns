@@ -4,6 +4,7 @@
 #![allow(dead_code)]
 
 use anyhow::{Error, Result};
+use std::io::Write;
 
 /*
  * byteorder is a lower-level library that provides utilities for handling byte order (endianness).
@@ -21,25 +22,45 @@ use byteorder::{BigEndian, WriteBytesExt};
 #[derive(Debug)]
 pub struct DNSRecord {
     /// The domain name to which this record applies.
-    name: String,
+    pub name: Vec<u8>,
 
     /**
      * The type of DNS record, such as A (IPv4 address), AAAA (IPv6 address), CNAME, etc.
      * For simplicity sake, we'll reuse the QType enum.
      */
-    r_type: QType,
+    pub r#type: QType,
 
     /// The class of the DNS record, typically IN for Internet.
-    r_class: QClass,
+    pub class: QClass,
 
     /// The time-to-live of the record, which indicates how long the record can be cached.
-    ttl: i32,
+    pub ttl: i32,
 
     /// The length in octets of the data field.
-    rd_length: u16,
+    pub rdlength: u16,
 
     /// Additional record-specific data.
-    data: Vec<u8>,
+    pub rdata: Vec<u8>,
+}
+
+impl DNSRecord {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        // Create an empty byte array.
+        let mut bytes = Vec::new();
+
+        // Write the name. For simplicity, we just write the bytes vector with name.
+        bytes.write_all(&self.name)?;
+
+        // Write the other fields.
+        bytes.write_u16::<BigEndian>(self.r#type as u16)?;
+        bytes.write_u16::<BigEndian>(self.class as u16)?;
+        bytes.write_i32::<BigEndian>(self.ttl)?;
+        bytes.write_u16::<BigEndian>(self.rdlength)?;
+
+        bytes.write_all(&self.rdata)?;
+
+        Ok(bytes)
+    }
 }
 
 /*
@@ -47,7 +68,7 @@ pub struct DNSRecord {
  * That's why they've been explicitly defined.
  */
 /// QType values: <https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.3>
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QType {
     /// A host address.
     A = 1,
@@ -115,6 +136,8 @@ pub enum QType {
  * It's used for generic conversions across different types.
  * When implemented, it allows one type to be "converted into" another type.
  * The following code allows us to convert QType into u16.
+ *
+ * None of the below methods are designated 'pub' because it is implied.
  */
 impl Into<u16> for QType {
     fn into(self) -> u16 {
@@ -123,7 +146,7 @@ impl Into<u16> for QType {
 }
 
 /// QClass values: <https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.5>
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QClass {
     /// The Internet
     IN = 1,
@@ -151,27 +174,27 @@ impl Into<u16> for QClass {
 #[derive(Debug)]
 pub struct DNSHeader {
     /// Assigned by the program that generates any kind of query.
-    id: u16,
+    pub id: u16,
 
     // TODO: If I wanted to implement it, how would I go about it?
     /// Mostly going to be ignored.
-    flags: u16,
+    pub flags: u16,
 
     /// Specifies the number of entries in the question section.
-    qd_count: u16,
+    pub qdcount: u16,
 
     /// Specifies the number of resource records in the answer section.
-    an_count: u16,
+    pub ancount: u16,
 
     /// Specifies the number of name server resource records in the authority records section.
-    ns_count: u16,
+    pub nscount: u16,
 
     /// Specifies the number of resource records in the additional records section.
-    ar_count: u16,
+    pub arcount: u16,
 }
 
 impl DNSHeader {
-    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
         /*
          * Create an empty byte array.
          * Vec::new() is a generic function that creates a new growable vector.
@@ -187,10 +210,10 @@ impl DNSHeader {
          */
         bytes.write_u16::<BigEndian>(self.id)?;
         bytes.write_u16::<BigEndian>(self.flags)?;
-        bytes.write_u16::<BigEndian>(self.qd_count)?;
-        bytes.write_u16::<BigEndian>(self.an_count)?;
-        bytes.write_u16::<BigEndian>(self.ns_count)?;
-        bytes.write_u16::<BigEndian>(self.ar_count)?;
+        bytes.write_u16::<BigEndian>(self.qdcount)?;
+        bytes.write_u16::<BigEndian>(self.ancount)?;
+        bytes.write_u16::<BigEndian>(self.nscount)?;
+        bytes.write_u16::<BigEndian>(self.arcount)?;
 
         Ok(bytes)
     }
@@ -203,30 +226,30 @@ impl DNSHeader {
 #[derive(Debug)]
 pub struct DNSQuestion {
     /// A domain name represented as a sequence of labels (like example.com).
-    q_name: Vec<u8>,
+    pub qname: Vec<u8>,
 
     /// A code which specifies the type of the query (A, AAAA, etc.).
-    q_type: u16,
+    pub qtype: u16,
 
     /// A code that specifies the class of the query.
-    q_class: u16,
+    pub qclass: u16,
 }
 
 impl DNSQuestion {
-    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
         // Create an empty byte array.
         let mut bytes = Vec::new();
 
         /*
-         * Write the q_name.
-         * For simplicity, we just extend the bytes vector with q_name.
+         * Write the qname.
+         * For simplicity, we just write the bytes vector with qname.
          * Depending on the actual DNS protocol, there may be more complex transformations needed.
          */
-        bytes.extend(&self.q_name);
+        bytes.write_all(&self.qname)?;
 
         // Write the other fields.
-        bytes.write_u16::<BigEndian>(self.q_type)?;
-        bytes.write_u16::<BigEndian>(self.q_class)?;
+        bytes.write_u16::<BigEndian>(self.qtype)?;
+        bytes.write_u16::<BigEndian>(self.qclass)?;
 
         Ok(bytes)
     }

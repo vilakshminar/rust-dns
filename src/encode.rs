@@ -7,7 +7,8 @@ use anyhow::{Error, Result};
 
 /*
  * As of Rust 1.55, the Vec<u8> type implements the Write trait
- * directly. So, importing the std::io::Write trait is enough.
+ * directly. So, importing the std::io::Write trait is enough
+ * to use the write_all() method on Vec<u8>.
  */
 use std::io::Write;
 
@@ -20,7 +21,6 @@ use std::io::Write;
 pub fn dns_name(domain_name: &str) -> Result<Vec<u8>, Error> {
     let mut encoded = Vec::new();
     for part in domain_name.split('.') {
-        println!("1");
         let part_as_bytes = part.as_bytes();
 
         // prepend length of the part.
