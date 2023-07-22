@@ -1,0 +1,57 @@
+name: Code Coverage
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  workflow_dispatch:
+
+jobs:
+  toolchain:
+    name: Run unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup github actions
+        uses: actions/checkout@v3
+
+      - name: Setup rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Add llvm-tools component to toolchain
+        run: |
+          rustup toolchain add nightly --profile minimal --component llvm-tools-preview
+          rustup override set nightly
+
+      - name: Install grcov
+        run: cargo install grcov
+
+      - name: Build the code
+        env:
+          RUSTFLAGS: -Cinstrument-coverage
+        run: cargo build
+
+      - name: Run unit tests
+        env:
+          LLVM_PROFILE_FILE: grcov-%p-%m.profraw
+          RUSTFLAGS: -Cinstrument-coverage
+        run: cargo test --all-features
+
+      - name: Generate coverage
+        run: |
+          grcov $(find . -name "grcov-*.profraw" -print) \
+            --branch \
+            --ignore-not-existing \
+            --binary-path ./target/debug/ \
+            -s . \
+            -t html \
+            --ignore "/*" \
+            -o ./coverage
+
+      - name: Deploy coverage to github pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./coverage
