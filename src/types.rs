@@ -1,4 +1,4 @@
-//! Defines all the necessary data structures/types needed to implement a DNS resolver.
+//! Defines all the necessary data structures needed to implement a DNS resolver.
 
 // TODO: Remove this once I'm done.
 #![allow(dead_code)]
@@ -219,10 +219,12 @@ impl DNSHeader {
     }
 }
 
-/// Question format: <https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.2>
-///
-/// The question section is used to carry the "question" in most queries,
-/// i.e., the parameters that define what is being asked.
+/**
+ * Question format: <https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.2>
+ *
+ * The question section is used to carry the "question" in most queries,
+ * i.e., the parameters that define what is being asked.
+ */
 #[derive(Debug)]
 pub struct DNSQuestion {
     /// A domain name represented as a sequence of labels (like example.com).
