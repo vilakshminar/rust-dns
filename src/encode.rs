@@ -39,7 +39,6 @@ pub fn dns_name(domain_name: &str) -> Result<Vec<u8>, Error> {
 mod test {
     use super::*;
 
-    #[derive(Debug)]
     struct TestCase {
         domain: &'static str,
         expected: Vec<u8>,
