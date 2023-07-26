@@ -19,13 +19,13 @@ use byteorder::{BigEndian, WriteBytesExt};
  * Type & Class fields are a subset of QType & QClass that are defined below.
  */
 /// RR definition: <https://datatracker.ietf.org/doc/html/rfc1035#section-3.2>
+#[derive(Debug)]
 pub struct DNSRecord {
     /// The domain name to which this record applies.
     pub name: Vec<u8>,
 
     /**
      * The type of DNS record, such as A (IPv4 address), AAAA (IPv6 address), CNAME, etc.
-     * For simplicity sake, we'll reuse the QType enum.
      */
     pub r#type: QType,
 
@@ -33,7 +33,7 @@ pub struct DNSRecord {
     pub class: QClass,
 
     /// The time-to-live of the record, which indicates how long the record can be cached.
-    pub ttl: i32,
+    pub ttl: u32,
 
     /// The length in octets of the data field.
     pub rdlength: u16,
@@ -51,9 +51,9 @@ impl DNSRecord {
         bytes.write_all(&self.name)?;
 
         // Write the other fields.
-        bytes.write_u16::<BigEndian>(self.r#type as u16)?;
-        bytes.write_u16::<BigEndian>(self.class as u16)?;
-        bytes.write_i32::<BigEndian>(self.ttl)?;
+        bytes.write_u16::<BigEndian>(self.r#type.into())?;
+        bytes.write_u16::<BigEndian>(self.class.into())?;
+        bytes.write_u32::<BigEndian>(self.ttl)?;
         bytes.write_u16::<BigEndian>(self.rdlength)?;
 
         bytes.write_all(&self.rdata)?;
@@ -67,7 +67,7 @@ impl DNSRecord {
  * That's why they've been explicitly defined.
  */
 /// QType values: <https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.3>
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub enum QType {
     /// A host address.
     A,
@@ -167,7 +167,7 @@ impl From<QType> for u16 {
 }
 
 /// QClass values: <https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.5>
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub enum QClass {
     /// The Internet
     IN,
@@ -198,6 +198,7 @@ impl From<QClass> for u16 {
 }
 
 /// Header format: <https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.1>
+#[derive(Debug)]
 pub struct DNSHeader {
     /// Assigned by the program that generates any kind of query.
     pub id: u16,
@@ -251,15 +252,16 @@ impl DNSHeader {
  * The question section is used to carry the "question" in most queries,
  * i.e., the parameters that define what is being asked.
  */
+#[derive(Debug)]
 pub struct DNSQuestion {
     /// A domain name represented as a sequence of labels (like example.com).
     pub qname: Vec<u8>,
 
     /// A code which specifies the type of the query (A, AAAA, etc.).
-    pub qtype: u16,
+    pub qtype: QType,
 
     /// A code that specifies the class of the query.
-    pub qclass: u16,
+    pub qclass: QClass,
 }
 
 impl DNSQuestion {
@@ -275,9 +277,320 @@ impl DNSQuestion {
         bytes.write_all(&self.qname)?;
 
         // Write the other fields.
-        bytes.write_u16::<BigEndian>(self.qtype)?;
-        bytes.write_u16::<BigEndian>(self.qclass)?;
+        bytes.write_u16::<BigEndian>(self.qtype.into())?;
+        bytes.write_u16::<BigEndian>(self.qclass.into())?;
 
         Ok(bytes)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use anyhow::{Error, Result};
+
+    #[test]
+    fn test_record_to_bytes() -> Result<(), Error> {
+        struct TestCase {
+            record: DNSRecord,
+            expected: Vec<u8>,
+        }
+
+        let test_cases = vec![
+            // Most of the values are set to 0.
+            TestCase {
+                record: DNSRecord {
+                    name: vec![],
+                    r#type: QType::NULL,
+                    class: QClass::CS,
+                    ttl: 0,
+                    rdlength: 0,
+                    rdata: vec![],
+                },
+                expected: vec![0, 10, 0, 2, 0, 0, 0, 0, 0, 0],
+            },
+            // Empty string as a the record name.
+            TestCase {
+                record: DNSRecord {
+                    name: vec![b' '],
+                    r#type: QType::NS,
+                    class: QClass::CH,
+                    ttl: 0,
+                    rdlength: 1,
+                    rdata: vec![],
+                },
+                expected: vec![32, 0, 2, 0, 3, 0, 0, 0, 0, 0, 1],
+            },
+            // A record with a valid name and data.
+            TestCase {
+                record: DNSRecord {
+                    name: vec![b'g', b'o', b'o', b'g', b'l', b'e', b'.', b'c', b'o', b'm'],
+                    r#type: QType::ANY,
+                    class: QClass::IN,
+                    ttl: 3600,
+                    rdlength: 4,
+                    rdata: vec![127, 0, 0, 1],
+                },
+                expected: vec![
+                    103, 111, 111, 103, 108, 101, 46, 99, 111, 109, 0, 255, 0, 1, 0, 0, 14, 16, 0,
+                    4, 127, 0, 0, 1,
+                ],
+            },
+            // A record with a different name and data.
+            TestCase {
+                record: DNSRecord {
+                    name: vec![
+                        b'f', b'a', b'c', b'e', b'b', b'o', b'o', b'k', b'.', b'c', b'o', b'm',
+                    ],
+                    r#type: QType::A,
+                    class: QClass::HS,
+                    ttl: 7200,
+                    rdlength: 4,
+                    rdata: vec![157, 240, 0, 1],
+                },
+                expected: vec![
+                    102, 97, 99, 101, 98, 111, 111, 107, 46, 99, 111, 109, 0, 1, 0, 4, 0, 0, 28,
+                    32, 0, 4, 157, 240, 0, 1,
+                ],
+            },
+        ];
+
+        for test_case in test_cases {
+            let actual = test_case.record.to_bytes()?;
+            assert_eq!(
+                actual, test_case.expected,
+                "failed for dns record: {:?}",
+                test_case.record
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_qtype_into() -> Result<(), Error> {
+        struct TestCase {
+            qtype: QType,
+            expected: u16,
+        }
+
+        let test_cases = vec![
+            TestCase {
+                qtype: QType::A,
+                expected: 1,
+            },
+            TestCase {
+                qtype: QType::NS,
+                expected: 2,
+            },
+            TestCase {
+                qtype: QType::CNAME,
+                expected: 5,
+            },
+            TestCase {
+                qtype: QType::SOA,
+                expected: 6,
+            },
+            TestCase {
+                qtype: QType::MB,
+                expected: 7,
+            },
+            TestCase {
+                qtype: QType::MG,
+                expected: 8,
+            },
+            TestCase {
+                qtype: QType::MR,
+                expected: 9,
+            },
+            TestCase {
+                qtype: QType::NULL,
+                expected: 10,
+            },
+            TestCase {
+                qtype: QType::WKS,
+                expected: 11,
+            },
+            TestCase {
+                qtype: QType::PTR,
+                expected: 12,
+            },
+            TestCase {
+                qtype: QType::HINFO,
+                expected: 13,
+            },
+            TestCase {
+                qtype: QType::MINFO,
+                expected: 14,
+            },
+            TestCase {
+                qtype: QType::MX,
+                expected: 15,
+            },
+            TestCase {
+                qtype: QType::TXT,
+                expected: 16,
+            },
+            TestCase {
+                qtype: QType::AXFR,
+                expected: 252,
+            },
+            TestCase {
+                qtype: QType::MAILB,
+                expected: 253,
+            },
+            TestCase {
+                qtype: QType::ANY,
+                expected: 255,
+            },
+        ];
+
+        for test_case in test_cases {
+            let actual: u16 = test_case.qtype.into();
+            assert_eq!(
+                actual, test_case.expected,
+                "failed for qtype: {:?}",
+                test_case.qtype
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_qclass_into() -> Result<(), Error> {
+        struct TestCase {
+            qclass: QClass,
+            expected: u16,
+        }
+
+        let test_cases = vec![
+            TestCase {
+                qclass: QClass::IN,
+                expected: 1,
+            },
+            TestCase {
+                qclass: QClass::CS,
+                expected: 2,
+            },
+            TestCase {
+                qclass: QClass::CH,
+                expected: 3,
+            },
+            TestCase {
+                qclass: QClass::HS,
+                expected: 4,
+            },
+            TestCase {
+                qclass: QClass::ANY,
+                expected: 255,
+            },
+        ];
+
+        for test_case in test_cases {
+            let actual: u16 = test_case.qclass.into();
+            assert_eq!(
+                actual, test_case.expected,
+                "failed for qclass: {:?}",
+                test_case.qclass
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_header_to_bytes() -> Result<(), Error> {
+        struct TestCase {
+            header: DNSHeader,
+            expected: Vec<u8>,
+        }
+
+        let test_cases = vec![
+            // All values are set to 0.
+            TestCase {
+                header: DNSHeader {
+                    id: 0,
+                    flags: 0,
+                    qdcount: 0,
+                    ancount: 0,
+                    nscount: 0,
+                    arcount: 0,
+                },
+                expected: vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            },
+            // Some values are zero, others are not.
+            TestCase {
+                header: DNSHeader {
+                    id: 0,
+                    flags: 1024,
+                    qdcount: 0,
+                    ancount: 4,
+                    nscount: 0,
+                    arcount: 1,
+                },
+                expected: vec![0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 1],
+            },
+            // Values set to high numbers.
+            TestCase {
+                header: DNSHeader {
+                    id: 65535,
+                    flags: 8191,
+                    qdcount: 5000,
+                    ancount: 3000,
+                    nscount: 2000,
+                    arcount: 1000,
+                },
+                expected: vec![255, 255, 31, 255, 19, 136, 11, 184, 7, 208, 3, 232],
+            },
+        ];
+
+        for test_case in test_cases {
+            let actual = test_case.header.to_bytes()?;
+            assert_eq!(
+                actual, test_case.expected,
+                "failed for dns header: {:?}",
+                test_case.header
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_qn_to_bytes() -> Result<(), Error> {
+        struct TestCase {
+            question: DNSQuestion,
+            expected: Vec<u8>,
+        }
+
+        let test_cases = vec![
+            // Some values are zero, others are not.
+            TestCase {
+                question: DNSQuestion {
+                    qname: vec![],
+                    qtype: QType::NULL,
+                    qclass: QClass::IN,
+                },
+                expected: vec![0, 10, 0, 1],
+            },
+            // Values set to arbitrary numbers.
+            TestCase {
+                question: DNSQuestion {
+                    qname: vec![b'g', b'o', b'o', b'g', b'l', b'e', b'.', b'c', b'o', b'm'],
+                    qtype: QType::TXT,
+                    qclass: QClass::ANY,
+                },
+                expected: vec![
+                    103, 111, 111, 103, 108, 101, 46, 99, 111, 109, 0, 16, 0, 255,
+                ],
+            },
+        ];
+
+        for test_case in test_cases {
+            let actual = test_case.question.to_bytes()?;
+            assert_eq!(
+                actual, test_case.expected,
+                "failed for dns question: {:?}",
+                test_case.question
+            );
+        }
+        Ok(())
     }
 }
