@@ -18,4 +18,4 @@ doc:
 
 test:
 	@echo "*** Testing toy dns server"
-	cargo test
+	cargo test -- --nocapture
