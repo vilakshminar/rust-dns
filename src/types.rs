@@ -281,3 +281,40 @@ impl DNSQuestion {
         Ok(bytes)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    struct TestCase {
+        record: DNSRecord,
+        expected: Vec<u8>,
+    }
+
+    #[test]
+    fn test_to_bytes() {
+        let test_cases = vec![TestCase {
+            record: DNSRecord {
+                name: vec![b'g', b'o', b'o', b'g', b'l', b'e', b'.', b'c', b'o', b'm'],
+                r#type: QType::A,
+                class: QClass::IN,
+                ttl: 3600,
+                rdlength: 4,
+                rdata: vec![127, 0, 0, 1],
+            },
+            expected: vec![
+                6, b'g', b'o', b'o', b'g', b'l', b'e', 3, b'c', b'o', b'm', 0,
+            ],
+        }];
+
+        for test_case in test_cases {
+            /*
+            assert_eq!(
+                 actual, test_case.expected,
+                 "failed for domain: {}",
+                 test_case.domain
+             );
+             */
+        }
+    }
+}
