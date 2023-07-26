@@ -10,6 +10,8 @@
 
 My own implementation of Julia Evans's [Implementing DNS in a weekend](https://implement-dns.wizardzines.com) project.
 
+Code coverage report for the project can be found here: https://vilakshminar.github.io/rust-dns/
+
 ## Getting Started :clapper:
 
 Clone the repository, ensure all the dependencies mentioned in the 'Dependencies' section are installed

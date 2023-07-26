@@ -66,3 +66,107 @@ pub fn build_query(
 pub fn execute_query() {
     println!("Executing query...");
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use anyhow::{Error, Result};
+
+    struct TestCase {
+        domain: &'static str,
+        record_type: QType,
+        record_class: QClass,
+
+        expected: Vec<u8>,
+    }
+
+    #[test]
+    fn test_build_query() -> Result<(), Error> {
+        let test_cases = vec![
+            TestCase {
+                domain: "",
+                record_type: QType::A,
+                record_class: QClass::IN,
+
+                /*
+                 * Explanation of the expected output:
+                 *
+                 * build_query() contatenates the header and question bytes. The header is 12 bytes long
+                 * and the question will be atleast 4 bytes long (record name can take up more).
+                 * So, the total length of the output will be atleast 16 bytes in length.
+                 *
+                 * Consider the DNS header section:
+                 *
+                 * id: 307 - This value is deterministic thanks to the seed used by the build_query
+                 * logic. In binary, 307 is 00000001 00110011. The first 8 bits are 00000001 which is
+                 * 1 in decimal or 0x01 in hexadecimal. The next 8 bits are 00110011 which is 51 in
+                 * decimal or 0x33 in hexadecimal. So, the bytes would be [1, 51] or [0x01, 0x33] in
+                 * big endian format.
+                 *
+                 * flags: 1 << 8 -> This operation is equivalent to 256 which in hexadecimal is 0x0100.
+                 * So, the bytes would be [0x01, 0x00] in hexadecimal or [1, 0] in decimal.
+                 *
+                 * qdcount: 1 -> 1 in hexadecimal is 0x0001. So, the bytes would be [0x00, 0x01] in
+                 * hexadecimal or [0, 1] in decimal.
+                 *
+                 * ancount: 0 -> 0 in hexadecimal is 0x0000. So, the bytes would be [0x00, 0x00] in
+                 * hexadecimal or [0, 0] in decimal.
+                 *
+                 * nscount: 0 -> same as above, the bytes would be [0x00, 0x00] in hex or [0, 0] in decimal.
+                 *
+                 * arcount: 0 -> same as above.
+                 *
+                 * So, the header bytes would be [1, 51, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0].
+                 *
+                 * Now for the DNS question section:
+                 *
+                 * qname: This is the encoded domain name. Since the domain name is empty, the bytes would be
+                 * [0x00, 0x00] in hexadecimal or [0, 0] in decimal.
+                 * qtype: QType::A -> 1 in hexadecimal is 0x0001. So, the bytes would be [0x00, 0x01] in
+                 * hexadecimal or [0, 1] in decimal.
+                 * qclass: 1 -> same as above.
+                 * So, the question bytes would be [0, 0, 0, 1, 0, 1].
+                 *
+                 * Concatenating the header and question bytes, we get:
+                 * [1, 51, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1]
+                 *
+                 */
+                expected: vec![1, 51, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+            },
+            TestCase {
+                domain: "google.com",
+                record_type: QType::A,
+                record_class: QClass::IN,
+                expected: vec![
+                    1, 51, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, // header
+                    6, 103, 111, 111, 103, 108, 101, 3, 99, 111, 109, 0, // question
+                    0, 1, 0, 1,
+                ],
+            },
+            TestCase {
+                domain: "google.com",
+                record_type: QType::TXT,
+                record_class: QClass::ANY,
+                expected: vec![
+                    1, 51, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, // header
+                    6, 103, 111, 111, 103, 108, 101, 3, 99, 111, 109, 0, // question
+                    0, 16, 0, 255,
+                ],
+            },
+        ];
+
+        for test_case in test_cases {
+            let actual = build_query(
+                test_case.domain,
+                test_case.record_type,
+                test_case.record_class,
+            )?;
+            assert_eq!(
+                actual, test_case.expected,
+                "failed for domain: {}, type: {:?} & class: {:?}",
+                test_case.domain, test_case.record_type, test_case.record_class
+            );
+        }
+        Ok(())
+    }
+}
