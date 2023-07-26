@@ -19,7 +19,6 @@ use byteorder::{BigEndian, WriteBytesExt};
  * Type & Class fields are a subset of QType & QClass that are defined below.
  */
 /// RR definition: <https://datatracker.ietf.org/doc/html/rfc1035#section-3.2>
-#[derive(Debug)]
 pub struct DNSRecord {
     /// The domain name to which this record applies.
     pub name: Vec<u8>,
@@ -68,85 +67,107 @@ impl DNSRecord {
  * That's why they've been explicitly defined.
  */
 /// QType values: <https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.3>
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Copy, Clone)]
 pub enum QType {
     /// A host address.
-    A = 1,
+    A,
 
     /// An authoritative name server
-    NS = 2,
+    NS,
 
     /// A mail destination. Obsolete, use MX instead.
-    // MD = 3,
+    // MD,
 
     /// A mail forwarder. Obsolete, use MX instead.
-    // MF = 4,
+    // MF,
 
     /// The canonical name for an alias.
-    CNAME = 5,
+    CNAME,
 
     /// Marks the start of a zone of authority.
-    SOA = 6,
+    SOA,
 
     /// A mailbox domain name (EXPERIMENTAL)
-    MB = 7,
+    MB,
 
     /// A mail group member (EXPERIMENTAL)
-    MG = 8,
+    MG,
 
     /// A mail rename domain name (EXPERIMENTAL)
-    MR = 9,
+    MR,
 
     /// A null RR (EXPERIMENTAL)
-    NULL = 10,
+    NULL,
 
     /// A well known service description.
-    WKS = 11,
+    WKS,
 
     /// A domain name pointer.
-    PTR = 12,
+    PTR,
 
     /// Host information.
-    HINFO = 13,
+    HINFO,
 
     /// Mailbox or mail list information.
-    MINFO = 14,
+    MINFO,
 
     /// Mail exchange.
-    MX = 15,
+    MX,
 
     /// Text strings.
-    TXT = 16,
+    TXT,
 
     /// A request for a transfer of an entire zone.
-    AXFR = 252,
+    AXFR,
 
     /// A request for mailbox-related records (MB, MG or MR).
-    MAILB = 253,
+    MAILB,
 
     /// A request for mail agent RRs. Obsolete, use MX instead.
-    // MAILA = 254,
+    // MAILA,
 
     /// A request for all records.
-    ANY = 255,
+    ANY,
 }
 
 /*
- * Into trait is known as a "conversion trait".
+ * From<T> represents the conversion of a value of type T
+ * into a target type (impl From<T> for TargetType).
+ *
  * It's used for generic conversions across different types.
- * When implemented, it allows one type to be "converted into" another type.
  * The following code allows us to convert QType into u16.
  *
  * None of the below methods are designated 'pub' because it is implied.
  */
-impl Into<u16> for QType {
-    fn into(self) -> u16 {
-        self as u16
+impl From<&QType> for u16 {
+    fn from(original: &QType) -> u16 {
+        match original {
+            QType::A => 1,
+            QType::NS => 2,
+            // QType::MD => 3,
+            // QType::MF => 4,
+            QType::CNAME => 5,
+            QType::SOA => 6,
+            QType::MB => 7,
+            QType::MG => 8,
+            QType::MR => 9,
+            QType::NULL => 10,
+            QType::WKS => 11,
+            QType::PTR => 12,
+            QType::HINFO => 13,
+            QType::MINFO => 14,
+            QType::MX => 15,
+            QType::TXT => 16,
+            QType::AXFR => 252,
+            QType::MAILB => 253,
+            //QType::MAILA => 254,
+            QType::ANY => 255,
+        }
     }
 }
 
 /// QClass values: <https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.5>
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Copy, Clone)]
 pub enum QClass {
     /// The Internet
     IN = 1,
@@ -171,7 +192,6 @@ impl Into<u16> for QClass {
 }
 
 /// Header format: <https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.1>
-#[derive(Debug)]
 pub struct DNSHeader {
     /// Assigned by the program that generates any kind of query.
     pub id: u16,
@@ -225,7 +245,6 @@ impl DNSHeader {
  * The question section is used to carry the "question" in most queries,
  * i.e., the parameters that define what is being asked.
  */
-#[derive(Debug)]
 pub struct DNSQuestion {
     /// A domain name represented as a sequence of labels (like example.com).
     pub qname: Vec<u8>,
