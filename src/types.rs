@@ -198,6 +198,7 @@ impl From<QClass> for u16 {
 }
 
 /// Header format: <https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.1>
+#[derive(Debug)]
 pub struct DNSHeader {
     /// Assigned by the program that generates any kind of query.
     pub id: u16,
@@ -287,14 +288,15 @@ mod test {
     use super::*;
     use anyhow::{Error, Result};
 
-    struct TestCase {
-        record: DNSRecord,
-        expected: Vec<u8>,
-    }
-
     #[test]
-    fn test_to_bytes() -> Result<(), Error> {
+    fn test_record_to_bytes() -> Result<(), Error> {
+        struct TestCase {
+            record: DNSRecord,
+            expected: Vec<u8>,
+        }
+
         let test_cases = vec![
+            // Most of the values are set to 0.
             TestCase {
                 record: DNSRecord {
                     name: vec![],
@@ -306,6 +308,7 @@ mod test {
                 },
                 expected: vec![0, 10, 0, 2, 0, 0, 0, 0, 0, 0],
             },
+            // Empty string as a the record name.
             TestCase {
                 record: DNSRecord {
                     name: vec![b' '],
@@ -317,6 +320,7 @@ mod test {
                 },
                 expected: vec![32, 0, 2, 0, 3, 0, 0, 0, 0, 0, 1],
             },
+            // A record with a valid name and data.
             TestCase {
                 record: DNSRecord {
                     name: vec![b'g', b'o', b'o', b'g', b'l', b'e', b'.', b'c', b'o', b'm'],
@@ -331,6 +335,7 @@ mod test {
                     4, 127, 0, 0, 1,
                 ],
             },
+            // A record with a different name and data.
             TestCase {
                 record: DNSRecord {
                     name: vec![
@@ -355,6 +360,63 @@ mod test {
                 actual, test_case.expected,
                 "failed for dns record: {:?}",
                 test_case.record
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_header_to_bytes() -> Result<(), Error> {
+        struct TestCase {
+            header: DNSHeader,
+            expected: Vec<u8>,
+        }
+
+        let test_cases = vec![
+            // All values are set to 0.
+            TestCase {
+                header: DNSHeader {
+                    id: 0,
+                    flags: 0,
+                    qdcount: 0,
+                    ancount: 0,
+                    nscount: 0,
+                    arcount: 0,
+                },
+                expected: vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            },
+            // Some values are zero, others are not.
+            TestCase {
+                header: DNSHeader {
+                    id: 0,
+                    flags: 1024,
+                    qdcount: 0,
+                    ancount: 4,
+                    nscount: 0,
+                    arcount: 1,
+                },
+                expected: vec![0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 1],
+            },
+            // Values set to high numbers.
+            TestCase {
+                header: DNSHeader {
+                    id: 65535,
+                    flags: 8191,
+                    qdcount: 5000,
+                    ancount: 3000,
+                    nscount: 2000,
+                    arcount: 1000,
+                },
+                expected: vec![255, 255, 31, 255, 19, 136, 11, 184, 7, 208, 3, 232],
+            },
+        ];
+
+        for test_case in test_cases {
+            let actual = test_case.header.to_bytes()?;
+            assert_eq!(
+                actual, test_case.expected,
+                "failed for dns header: {:?}",
+                test_case.header
             );
         }
         Ok(())
