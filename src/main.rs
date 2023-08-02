@@ -7,6 +7,10 @@ mod types;
 use types::{QClass, QType};
 
 fn main() {
+    run();
+}
+
+fn run() {
     let qtype = QType::CNAME;
     let num: u16 = qtype.into();
     println!("{}", num);
