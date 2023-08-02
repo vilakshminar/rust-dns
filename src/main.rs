@@ -11,14 +11,19 @@ fn main() {
 }
 
 fn run() {
-    let qtype = QType::CNAME;
-    let num: u16 = qtype.into();
-    println!("{}", num);
-
     println!(
         "{:?}",
         dns::build_query("google.com", QType::CNAME, QClass::IN)
     );
+
+    let query = dns::build_query("google.com", QType::CNAME, QClass::IN);
+
+    // create a UDP socket
+    let socket = std::net::UdpSocket::bind(std::net::SocketAddr::new(
+        std::net::IpAddr::V4(std::net::Ipv4Addr::new(0, 0, 0, 0)),
+        0,
+    ))
+    .unwrap();
 }
 
 #[cfg(test)]
