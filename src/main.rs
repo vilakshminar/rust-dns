@@ -20,3 +20,15 @@ fn run() {
         dns::build_query("google.com", QType::CNAME, QClass::IN)
     );
 }
+
+#[cfg(test)]
+mod test {
+    use anyhow::{Error, Result};
+
+    #[test]
+    fn test_run() -> Result<(), Error> {
+        super::run();
+
+        Ok(())
+    }
+}
