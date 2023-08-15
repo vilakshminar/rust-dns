@@ -24,6 +24,7 @@ fn run() -> Result<Vec<u8>, Error> {
     // Query Google's public DNS server.
     let dns_server = "8.8.8.8:53";
 
+    // Send the query.
     socket.send_to(&query, dns_server)?;
 
     /* Buffer to hold received data.
