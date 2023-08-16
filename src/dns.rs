@@ -49,6 +49,8 @@ pub fn build_query(
         arcount: 0,
     };
 
+    println!("Header: {:?}", hdr);
+
     // Declare object of type DNSQuestion.
     let qn = DNSQuestion {
         qname: name,
@@ -56,8 +58,14 @@ pub fn build_query(
         qclass: record_class.into(),
     };
 
+    println!("Question: {:?}", qn);
+
     // Concatenate the header and question bytes.
     let mut res = hdr.to_bytes()?;
+
+    println!("Header in bytes: {:?}", hdr.to_bytes()?);
+    println!("Qn in bytes: {:?}", qn.to_bytes()?);
+
     res.append(&mut qn.to_bytes()?);
 
     Ok(res)

@@ -26,6 +26,7 @@ pub struct DNSRecord {
 
     /**
      * The type of DNS record, such as A (IPv4 address), AAAA (IPv6 address), CNAME, etc.
+     * Type is QType, an enum, encoded as an integer.
      */
     pub r#type: QType,
 
@@ -38,7 +39,7 @@ pub struct DNSRecord {
     /// The length in octets of the data field.
     pub rdlength: u16,
 
-    /// Additional record-specific data.
+    /// Additional record-specific data, like the IP address.
     pub rdata: Vec<u8>,
 }
 

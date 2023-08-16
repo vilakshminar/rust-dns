@@ -16,7 +16,7 @@ fn main() {
 }
 
 fn run() -> Result<Vec<u8>, Error> {
-    let query = dns::build_query("www.google.com", QType::A, QClass::IN)?;
+    let query = dns::build_query("www.example.com", QType::A, QClass::IN)?;
 
     // Create a UDP socket
     let socket = UdpSocket::bind("0.0.0.0:0")?;
@@ -36,6 +36,8 @@ fn run() -> Result<Vec<u8>, Error> {
 
     // Receive the DNS response.
     let (_amt, _src) = socket.recv_from(&mut buf)?;
+
+    println!("bytes: {:?}", &buf[.._amt]);
 
     /*
      * TODO: Parse the DNS response from buf[..amt].
