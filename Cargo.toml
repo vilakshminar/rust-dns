@@ -1,0 +1,9 @@
+[package]
+name = "rust-dns"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.71"
+byteorder = "1.4.3"
+rand = "0.8.5"
